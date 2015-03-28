@@ -16,6 +16,7 @@ def main():
     # cv2.imshow("Rectangle 0,0", rect)
 
     directory = os.path.dirname(args.image)
+    cv2.imwrite(os.path.join(directory, "orig.png"), cropped.image)
 
     for x in range(0, cropped.x):
         for y in range(0, cropped.y):
