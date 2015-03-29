@@ -14,6 +14,7 @@ def main():
     puzzle = loadpuzzle(args.imagesdirectory)
     solve(puzzle)
     print puzzle
+    cv2.waitKey(0)
 
 
 def solve(puzzle):
@@ -28,7 +29,9 @@ def loadpuzzle(imagedir):
         if ispiece(filename):
             pieces.append(loadpiece(imagedir, filename, idnum))
             idnum += 1
-    return model.puzzle.Puzzle(pieces)
+        if filename == "orig.png":
+            orig = cv2.imread(os.path.join(imagedir, filename))
+    return model.puzzle.Puzzle(pieces, orig)
 
 
 def loadpiece(imagedir, filename, idnum=-1):

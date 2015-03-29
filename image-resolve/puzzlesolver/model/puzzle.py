@@ -1,10 +1,11 @@
 import numpy
 import random
 import string
+import cv2
 
 
 class Puzzle:
-    def __init__(self, pieces):
+    def __init__(self, pieces, orig):
         maxx = 0
         maxy = 0
         for piece in pieces:
@@ -19,6 +20,7 @@ class Puzzle:
         # solution is vector of 3 integers - pieceId, rotation, segmentId
         self.sol = numpy.full((self.xsize, self.ysize, 3), -1, int)
         self.calculatemetrics()
+        self.orig = orig
 
     def seedplaced(self):
         return self.sol.max() != -1
@@ -28,7 +30,8 @@ class Puzzle:
         seedpiece = self.pieces[seedid]
         posx = random.randint(0, self.xsize - 1)
         posy = random.randint(0, self.ysize - 1)
-        rotation = random.randint(0, 3)
+        # rotation = random.randint(0, 3)
+        rotation = 0
         self.sol[posx][posy][0] = seedpiece.id
         self.sol[posx][posy][1] = rotation
 
@@ -37,32 +40,80 @@ class Puzzle:
         bestindex = []
         for x in range(0, self.xsize):
             for y in range(0, self.ysize):
-                current = 0
+                neighbours = []
                 if x > 0:
                     if self.sol[x - 1][y][0] != -1:
-                        current += 1
+                        neighbours.append((x - 1, y))
                 if x < self.xsize - 1:
                     if self.sol[x + 1][y][0] != -1:
-                        current += 1
+                        neighbours.append((x + 1, y))
                 if y > 0:
                     if self.sol[x][y - 1][0] != -1:
-                        current += 1
+                        neighbours.append((x, y - 1))
                 if y < self.ysize - 1:
                     if self.sol[x][y + 1][0] != -1:
-                        current += 1
-                if current == best:
-                    bestindex.append((x, y))
-                if current > best:
-                    best = current
-                    bestindex = [(x, y)]
+                        neighbours.append((x, y + 1))
+                if len(neighbours) == best:
+                    bestindex.append((x, y, neighbours))
+                if len(neighbours) > best:
+                    best = len(neighbours)
+                    bestindex = [(x, y, neighbours)]
 
         return bestindex
+
+    def getbestbuddies(self, position):
+        x, y, neighbours = position
+        buddies = []
+        for neigh in neighbours:
+            currentsol = self.sol[neigh[0]][neigh[1]]
+            piece = self.pieces[currentsol[0]]
+            if x < neigh[0]:
+                side = 0
+            if x > neigh[0]:
+                side = 1
+            if y > neigh[1]:
+                side = 3
+            if y < neigh[1]:
+                side = 2
+            buddies.append(piece.bestbuddies[side])
+        return buddies
 
     def calculatemetrics(self):
         for piece in self.pieces:
             piece.calculatemetrics(self.pieces)
         for piece in self.pieces:
             piece.calculatebestbuddies(self.pieces)
+
+    def addtosol(self, x, y, pieceid, rotation):
+        self.sol[x][y][0] = pieceid
+        self.sol[x][y][1] = rotation
+        self.sol[x][y][2] = -1
+
+    def showsol(self):
+        dummy = numpy.full_like(self.pieces[0].image, 0)
+        columns = []
+        for i in range(0, self.xsize):
+            columns.append([])
+            for j in range(0, self.ysize):
+                sol = self.sol[i][j]
+                if sol[0] == -1:
+                    columns[i].append(dummy)
+                else:
+                    if sol[1] == 0:
+                        columns[i].append(self.pieces[sol[0]].image)
+                    if sol[1] == 1:
+                        columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 2))
+                    if sol[1] == 2:
+                        columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 1))
+                    if sol[1] == 3:
+                        columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 3))
+        imagecols = []
+        for col in columns:
+            imagecols.append(numpy.vstack(col))
+        image = numpy.hstack(imagecols)
+
+        cv2.imshow("Original", self.orig)
+        cv2.imshow("Solved", image)
 
     def __str__(self):
         data = ["Puzzle {0}x{1}\r\n".format(self.xsize, self.ysize)]

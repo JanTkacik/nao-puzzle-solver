@@ -6,10 +6,11 @@ from puzzlesolver.metrics import dissimilarity
 class Piece:
     metrics = [dissimilarity.dissimilarity]
 
-    def __init__(self, image, pieceid, realx=-1, realy=-1):
+    def __init__(self, image, pieceid, realx=-1, realy=-1, realdir=0):
         self.image = image
         self.realx = realx
         self.realy = realy
+        self.realdir = realdir
         self.id = pieceid
         self.x = -1
         self.y = -1
@@ -86,4 +87,4 @@ class Piece:
         return numpy.fliplr(side)
 
     def __str__(self):
-        return "[{0}][{1},{2}]".format(self.id, self.realx, self.realy)
+        return "[{0}][{1},{2}][{3}]".format(self.id, self.realx, self.realy, self.realdir)
