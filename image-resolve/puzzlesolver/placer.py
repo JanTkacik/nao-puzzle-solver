@@ -1,17 +1,24 @@
 def place(puzzle):
     if not puzzle.seedplaced():
         puzzle.placeseed()
-    pos = puzzle.mostinformativepos()
 
-    for position in pos:
-        bbl = puzzle.getbestbuddies(position)
-        print bbl
-        if hasonlyonepiece(bbl):
+    while not puzzle.allset():
+        pos = puzzle.mostinformativepos()
+        for position in pos:
             x, y, neighbours = position
-            rotation = getrotation(x, y, neighbours, bbl)
-            if rotation is not None:
-                puzzle.addtosol(x, y, bbl[0][0], rotation)
-                break
+            print "Position: {0}".format(position)
+            bbl = puzzle.getbestbuddies(position)
+            print "Best buddies: {0}".format(bbl)
+            if hasonlyonepiece(bbl):
+                rotation = getrotation(x, y, neighbours, bbl)
+                if rotation is not None:
+                    puzzle.addtosol(x, y, bbl[0][0], rotation)
+                    break
+            print "Correct best buddy not found"
+            nml = puzzle.getbestpossible(position)
+            print "Best possible piece id {0} with rotation {1}".format(nml[0], nml[1])
+            puzzle.addtosol(x, y, nml[0], nml[1])
+        print puzzle
     puzzle.showsol()
 
 rotationmatrix = \

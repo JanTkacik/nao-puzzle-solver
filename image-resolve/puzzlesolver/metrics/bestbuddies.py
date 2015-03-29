@@ -1,2 +1,0 @@
-def bestbuddies(a, b):
-

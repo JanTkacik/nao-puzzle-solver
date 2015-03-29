@@ -40,24 +40,25 @@ class Puzzle:
         bestindex = []
         for x in range(0, self.xsize):
             for y in range(0, self.ysize):
-                neighbours = []
-                if x > 0:
-                    if self.sol[x - 1][y][0] != -1:
-                        neighbours.append((x - 1, y))
-                if x < self.xsize - 1:
-                    if self.sol[x + 1][y][0] != -1:
-                        neighbours.append((x + 1, y))
-                if y > 0:
-                    if self.sol[x][y - 1][0] != -1:
-                        neighbours.append((x, y - 1))
-                if y < self.ysize - 1:
-                    if self.sol[x][y + 1][0] != -1:
-                        neighbours.append((x, y + 1))
-                if len(neighbours) == best:
-                    bestindex.append((x, y, neighbours))
-                if len(neighbours) > best:
-                    best = len(neighbours)
-                    bestindex = [(x, y, neighbours)]
+                if self.sol[x][y][0] == -1:
+                    neighbours = []
+                    if x > 0:
+                        if self.sol[x - 1][y][0] != -1:
+                            neighbours.append((x - 1, y))
+                    if x < self.xsize - 1:
+                        if self.sol[x + 1][y][0] != -1:
+                            neighbours.append((x + 1, y))
+                    if y > 0:
+                        if self.sol[x][y - 1][0] != -1:
+                            neighbours.append((x, y - 1))
+                    if y < self.ysize - 1:
+                        if self.sol[x][y + 1][0] != -1:
+                            neighbours.append((x, y + 1))
+                    if len(neighbours) == best:
+                        bestindex.append((x, y, neighbours))
+                    if len(neighbours) > best:
+                        best = len(neighbours)
+                        bestindex = [(x, y, neighbours)]
 
         return bestindex
 
@@ -77,6 +78,55 @@ class Puzzle:
                 side = 2
             buddies.append(piece.bestbuddies[side])
         return buddies
+
+    def getbestpossible(self, position):
+        x, y, neighbours = position
+        metrics = []
+        for neigh in neighbours:
+            currentsol = self.sol[neigh[0]][neigh[1]]
+            piece = self.pieces[currentsol[0]]
+            if x < neigh[0]:
+                side = 0
+            if x > neigh[0]:
+                side = 1
+            if y > neigh[1]:
+                side = 3
+            if y < neigh[1]:
+                side = 2
+            metrics.append(piece.metrics[side])
+        # TODO rotation wise summing
+        if len(metrics) == 1:
+            summ = numpy.add(metrics[0], numpy.zeros_like(metrics[0]))
+        if len(metrics) == 2:
+            summ = numpy.add(metrics[0], metrics[1])
+        if len(metrics) == 3:
+            summ = numpy.add(metrics[0], numpy.add(metrics[1], metrics[2]))
+        if len(metrics) == 4:
+            summ = numpy.add(numpy.add(metrics[0], metrics[1]), numpy.add(metrics[2], metrics[3]))
+
+        pieceid = -1
+        rotation = -1
+        while True:
+            flatmax = numpy.nanargmax(summ)
+            maxtuple = numpy.unravel_index(flatmax, summ.shape)
+            pieceid = maxtuple[2]
+            if self.isset(pieceid):
+                summ[maxtuple[0]][maxtuple[1]][maxtuple[2]] = -1
+            else:
+                rotation = maxtuple[0]
+                break
+
+        return pieceid, rotation
+
+    def allset(self):
+        return not self.isset(-1)
+
+    def isset(self, pieceid):
+        for y in range(0, self.ysize):
+            for x in range(0, self.xsize):
+                if self.sol[x][y][0] == pieceid:
+                    return True
+        return False
 
     def calculatemetrics(self):
         for piece in self.pieces:
