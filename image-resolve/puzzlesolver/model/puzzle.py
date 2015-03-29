@@ -30,8 +30,8 @@ class Puzzle:
         seedpiece = self.pieces[seedid]
         posx = random.randint(0, self.xsize - 1)
         posy = random.randint(0, self.ysize - 1)
-        # rotation = random.randint(0, 3)
-        rotation = 0
+        rotation = random.randint(0, 3)
+        # rotation = 0
         self.sol[posx][posy][0] = seedpiece.id
         self.sol[posx][posy][1] = rotation
 

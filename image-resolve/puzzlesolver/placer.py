@@ -1,9 +1,13 @@
 def place(puzzle):
     if not puzzle.seedplaced():
         puzzle.placeseed()
+        print "Seed placed"
+        print puzzle
 
     while not puzzle.allset():
+        added = False
         pos = puzzle.mostinformativepos()
+        print "Most informative positions {0}".format(pos)
         for position in pos:
             x, y, neighbours = position
             print "Position: {0}".format(position)
@@ -13,11 +17,15 @@ def place(puzzle):
                 rotation = getrotation(x, y, neighbours, bbl)
                 if rotation is not None:
                     puzzle.addtosol(x, y, bbl[0][0], rotation)
+                    added = True
                     break
-            print "Correct best buddy not found"
-            nml = puzzle.getbestpossible(position)
-            print "Best possible piece id {0} with rotation {1}".format(nml[0], nml[1])
-            puzzle.addtosol(x, y, nml[0], nml[1])
+        if not added:
+            for position in pos:
+                print "Correct best buddy not found"
+                nml = puzzle.getbestpossible(position)
+                print "Best possible piece id {0} with rotation {1}".format(nml[0], nml[1])
+                puzzle.addtosol(x, y, nml[0], nml[1])
+                break
         print puzzle
     puzzle.showsol()
 
