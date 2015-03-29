@@ -4,6 +4,7 @@ import cv2
 import argparse
 import os
 import re
+import placer
 
 ispiecere = re.compile("^\d*_\d*_\d*\..*")
 
@@ -11,7 +12,12 @@ ispiecere = re.compile("^\d*_\d*_\d*\..*")
 def main():
     args = parse_args()
     puzzle = loadpuzzle(args.imagesdirectory)
-    print(puzzle)
+    solve(puzzle)
+    print puzzle
+
+
+def solve(puzzle):
+    placer.place(puzzle)
 
 
 def loadpuzzle(imagedir):
