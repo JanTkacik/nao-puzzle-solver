@@ -17,6 +17,8 @@ def main():
     solve(puzzle)
     print puzzle
     cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    puzzle.video.release()
 
 
 def solve(puzzle):
@@ -42,7 +44,8 @@ def loadpuzzle(imagedir):
             idnum += 1
         if filename == "orig.png":
             orig = cv2.imread(os.path.join(imagedir, filename))
-    return model.puzzle.Puzzle(pieces, orig)
+
+    return model.puzzle.Puzzle(pieces, orig, os.path.join(imagedir, "video.avi"))
 
 
 def loadpiece(imagedir, filename, idnum=-1):

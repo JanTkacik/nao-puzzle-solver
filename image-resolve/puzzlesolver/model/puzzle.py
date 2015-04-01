@@ -6,7 +6,7 @@ from puzzlesolver.metrics.helper import *
 
 
 class Puzzle:
-    def __init__(self, pieces, orig):
+    def __init__(self, pieces, orig, videopath=None):
         maxx = 0
         maxy = 0
         for piece in pieces:
@@ -25,6 +25,12 @@ class Puzzle:
         self.maxsegid = 0
         self.piecesposition = {}
         self.shiftside = 0
+        self.video = None
+        if videopath is not None:
+            videoimg = self.getvideoimage()
+            height, width, depth = videoimg.shape
+            self.video = cv2.VideoWriter(videopath, -1, 2, (width, height))
+            self.writetovideo()
 
     def seedplaced(self):
         return self.sol.max() != -1
@@ -133,11 +139,21 @@ class Puzzle:
         for piece in self.pieces:
             piece.calculatebestbuddies(self.pieces)
 
+    def getvideoimage(self):
+        image, seg = self.generateimages()
+        return numpy.vstack([image, seg])
+
+    def writetovideo(self):
+        if self.video is not None:
+            videoimg = self.getvideoimage()
+            self.video.write(videoimg)
+
     def addtosol(self, x, y, pieceid, rotation):
         self.sol[x][y][0] = pieceid
         self.sol[x][y][1] = rotation
         self.sol[x][y][2] = self.getsegmentid(x, y, rotation)
         self.piecesposition[pieceid] = (x, y)
+        self.writetovideo()
 
     def getsegmentid(self, x, y, r):
         neighbours = self.getneighbours(x, y)
@@ -194,6 +210,7 @@ class Puzzle:
         self.sol[x][y][1] = -1
         self.sol[x][y][2] = -1
         del self.piecesposition[old]
+        self.writetovideo()
 
     def hasonlyonesegment(self):
         only = -2
@@ -302,9 +319,9 @@ class Puzzle:
         return minx, maxx, miny, maxy
 
     def generatesegmentsquare(self, segid):
-        return numpy.full_like(self.pieces[0].image, segid * 15)
+        return numpy.full_like(self.pieces[0].image, (segid + 1) * 10)
 
-    def showsol(self):
+    def generateimages(self):
         dummy = numpy.full_like(self.pieces[0].image, 0)
         columns = []
         columnsseg = []
@@ -333,12 +350,13 @@ class Puzzle:
             imagesegcols.append(numpy.vstack(segcol))
         image = numpy.hstack(imagecols)
         imageseg = numpy.hstack(imagesegcols)
+        return image, imageseg
 
+    def showsol(self):
+        image, imageseg = self.generateimages()
         cv2.imshow("Original", self.orig)
         cv2.imshow("Solved", image)
         cv2.imshow("Segments", imageseg)
-
-        self.getlargestsegment()
 
     def __str__(self):
         data = ["Puzzle {0}x{1}\r\n".format(self.xsize, self.ysize)]
