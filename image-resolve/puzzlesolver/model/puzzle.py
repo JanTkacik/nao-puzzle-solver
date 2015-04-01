@@ -156,18 +156,42 @@ class Puzzle:
             return segids[0]
         return -2
 
+    def getlargestsegment(self):
+        segcount = {}
+        for i in range(0, self.xsize):
+            for j in range(0, self.ysize):
+                seg = self.sol[i][j][2]
+                if seg in segcount:
+                    segcount[seg] += 1
+                else:
+                    segcount[seg] = 1
+        maxcount = 0
+        maxseg = -1
+        for count in segcount:
+            if segcount[count] > maxcount:
+                maxcount = segcount[count]
+                maxseg = count
+
+        return maxseg
+
     def getnewsegmentid(self):
         segid = self.maxsegid
         self.maxsegid += 1
         return segid
 
+    def generatesegmentsquare(self, segid):
+        return numpy.full_like(self.pieces[0].image, segid * 15)
+
     def showsol(self):
         dummy = numpy.full_like(self.pieces[0].image, 0)
         columns = []
+        columnsseg = []
         for i in range(0, self.xsize):
             columns.append([])
+            columnsseg.append([])
             for j in range(0, self.ysize):
                 sol = self.sol[i][j]
+                columnsseg[i].append(self.generatesegmentsquare(sol[2]))
                 if sol[0] == -1:
                     columns[i].append(dummy)
                 else:
@@ -180,12 +204,19 @@ class Puzzle:
                     if sol[1] == 3:
                         columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 3))
         imagecols = []
+        imagesegcols = []
         for col in columns:
             imagecols.append(numpy.vstack(col))
+        for segcol in columnsseg:
+            imagesegcols.append(numpy.vstack(segcol))
         image = numpy.hstack(imagecols)
+        imageseg = numpy.hstack(imagesegcols)
 
         cv2.imshow("Original", self.orig)
         cv2.imshow("Solved", image)
+        cv2.imshow("Segments", imageseg)
+
+        self.getlargestsegment()
 
     def __str__(self):
         data = ["Puzzle {0}x{1}\r\n".format(self.xsize, self.ysize)]
