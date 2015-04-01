@@ -1,6 +1,7 @@
 import numpy
 import math
 from puzzlesolver.metrics import dissimilarity
+from puzzlesolver.metrics.helper import *
 
 
 class Piece:
@@ -85,6 +86,27 @@ class Piece:
     def getrotatedside(self, sideid):
         side = self.getside(sideid)
         return numpy.fliplr(side)
+
+    def isbestbuddywith(self, selfx, selfy, selfrotation, otherx, othery, otherrotation):
+        selfside = gettouchingside(selfx, selfy, selfrotation, otherx, othery)
+        bestbuddy = self.bestbuddies[selfside]
+        if bestbuddy[0] == -1:
+            return False
+        sides = getcorrespondingsides(selfx, selfy, selfrotation, otherx, othery, otherrotation)
+        if sides[0] == selfside and sides[1] == bestbuddy[1]:
+            return True
+        return False
+
+    def getbestbuddyfor(self, selfx, selfy, selfrotation, otherx, othery):
+        selfside = gettouchingside(selfx, selfy, selfrotation, otherx, othery)
+        bestbuddy = self.bestbuddies[selfside]
+        if bestbuddy[0] == -1:
+            return -1, -1
+        for otherrotation in range(0, 4):
+            sides = getcorrespondingsides(selfx, selfy, selfrotation, otherx, othery, otherrotation)
+            if sides[0] == selfside and sides[1] == bestbuddy[1]:
+                return bestbuddy[0], otherrotation
+
 
     def __str__(self):
         return "[{0}][{1},{2}][{3}]".format(self.id, self.realx, self.realy, self.realdir)

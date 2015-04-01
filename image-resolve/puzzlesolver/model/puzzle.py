@@ -2,6 +2,7 @@ import numpy
 import random
 import string
 import cv2
+from puzzlesolver.metrics.helper import *
 
 
 class Puzzle:
@@ -21,6 +22,8 @@ class Puzzle:
         self.sol = numpy.full((self.xsize, self.ysize, 3), -1, int)
         self.calculatemetrics()
         self.orig = orig
+        self.maxsegid = 0
+        self.piecesposition = {}
 
     def seedplaced(self):
         return self.sol.max() != -1
@@ -31,70 +34,65 @@ class Puzzle:
         posx = random.randint(0, self.xsize - 1)
         posy = random.randint(0, self.ysize - 1)
         rotation = random.randint(0, 3)
-        # rotation = 0
-        self.sol[posx][posy][0] = seedpiece.id
-        self.sol[posx][posy][1] = rotation
+        self.addtosol(posx, posy, seedpiece.id, rotation)
 
     def mostinformativepos(self):
-        best = 0
-        bestindex = []
+        mostneighbours = 0
+        bestindexes = []
         for x in range(0, self.xsize):
             for y in range(0, self.ysize):
                 if self.sol[x][y][0] == -1:
-                    neighbours = []
-                    if x > 0:
-                        if self.sol[x - 1][y][0] != -1:
-                            neighbours.append((x - 1, y))
-                    if x < self.xsize - 1:
-                        if self.sol[x + 1][y][0] != -1:
-                            neighbours.append((x + 1, y))
-                    if y > 0:
-                        if self.sol[x][y - 1][0] != -1:
-                            neighbours.append((x, y - 1))
-                    if y < self.ysize - 1:
-                        if self.sol[x][y + 1][0] != -1:
-                            neighbours.append((x, y + 1))
-                    if len(neighbours) == best:
-                        bestindex.append((x, y, neighbours))
-                    if len(neighbours) > best:
-                        best = len(neighbours)
-                        bestindex = [(x, y, neighbours)]
+                    neighbours = self.getneighbours(x, y)
+                    if len(neighbours) == mostneighbours:
+                        bestindexes.append((x, y, neighbours))
+                    if len(neighbours) > mostneighbours:
+                        mostneighbours = len(neighbours)
+                        bestindexes = [(x, y, neighbours)]
 
-        return bestindex
+        return bestindexes
+
+    def getneighbours(self, x, y):
+        neighbours = []
+        if x > 0:
+            if self.sol[x - 1][y][0] != -1:
+                neighbours.append(self.sol[x - 1][y])
+        if x < self.xsize - 1:
+            if self.sol[x + 1][y][0] != -1:
+                neighbours.append(self.sol[x + 1][y])
+        if y > 0:
+            if self.sol[x][y - 1][0] != -1:
+                neighbours.append(self.sol[x][y - 1])
+        if y < self.ysize - 1:
+            if self.sol[x][y + 1][0] != -1:
+                neighbours.append(self.sol[x][y + 1])
+        return neighbours
 
     def getbestbuddies(self, position):
         x, y, neighbours = position
         buddies = []
         for neigh in neighbours:
-            currentsol = self.sol[neigh[0]][neigh[1]]
-            piece = self.pieces[currentsol[0]]
-            if x < neigh[0]:
-                side = 0
-            if x > neigh[0]:
-                side = 1
-            if y > neigh[1]:
-                side = 3
-            if y < neigh[1]:
-                side = 2
-            buddies.append(piece.bestbuddies[side])
+            neighpos = self.getpiecepos(neigh[0])
+            neighpiece = self.pieces[neigh[0]]
+            neighrot = neigh[1]
+            bestbuddy = neighpiece.getbestbuddyfor(neighpos[0], neighpos[1], neighrot, x, y)
+            if not bestbuddy[0] in self.piecesposition:
+                buddies.append(bestbuddy)
+            else:
+                buddies.append(numpy.full(2, -1, int))
         return buddies
+
+    def getpiecepos(self, pieceid):
+        return self.piecesposition[pieceid]
 
     def getbestpossible(self, position):
         x, y, neighbours = position
         metrics = []
         for neigh in neighbours:
-            currentsol = self.sol[neigh[0]][neigh[1]]
-            piece = self.pieces[currentsol[0]]
-            if x < neigh[0]:
-                side = 0
-            if x > neigh[0]:
-                side = 1
-            if y > neigh[1]:
-                side = 3
-            if y < neigh[1]:
-                side = 2
-            metrics.append(piece.metrics[side])
-        # TODO rotation wise summing
+            neighpos = self.getpiecepos(neigh[0])
+            neighpiece = self.pieces[neigh[0]]
+            neighrot = neigh[1]
+            side = gettouchingside(neighpos[0], neighpos[1], neighrot, x, y)
+            metrics.append(neighpiece.metrics[side])
         if len(metrics) == 1:
             summ = numpy.add(metrics[0], numpy.zeros_like(metrics[0]))
         if len(metrics) == 2:
@@ -137,7 +135,31 @@ class Puzzle:
     def addtosol(self, x, y, pieceid, rotation):
         self.sol[x][y][0] = pieceid
         self.sol[x][y][1] = rotation
-        self.sol[x][y][2] = -1
+        self.sol[x][y][2] = self.getsegmentid(x, y, rotation)
+        self.piecesposition[pieceid] = (x, y)
+
+    def getsegmentid(self, x, y, r):
+        neighbours = self.getneighbours(x, y)
+        piece = self.pieces[self.sol[x][y][0]]
+        segids = []
+        for neigh in neighbours:
+            otherposition = self.piecesposition[neigh[0]]
+            if piece.isbestbuddywith(x, y, r, otherposition[0], otherposition[1], neigh[1]):
+                segids.append(neigh[2])
+            else:
+                segids.append(-1)
+        if len(segids) == 0:
+            return self.getnewsegmentid()
+        if -1 in segids:
+            return self.getnewsegmentid()
+        if len(frozenset(segids)):
+            return segids[0]
+        return -2
+
+    def getnewsegmentid(self):
+        segid = self.maxsegid
+        self.maxsegid += 1
+        return segid
 
     def showsol(self):
         dummy = numpy.full_like(self.pieces[0].image, 0)
@@ -169,6 +191,6 @@ class Puzzle:
         data = ["Puzzle {0}x{1}\r\n".format(self.xsize, self.ysize)]
         for y in range(0, self.ysize):
             for x in range(0, self.xsize):
-                data.append("[{0},{1}] ".format(self.sol[x][y][0], self.sol[x][y][1]))
+                data.append("[{0},{1},{2}] ".format(self.sol[x][y][0], self.sol[x][y][1], self.sol[x][y][2]))
             data.append("\r\n")
         return string.join(data, '')
