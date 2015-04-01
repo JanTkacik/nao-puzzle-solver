@@ -24,6 +24,7 @@ class Puzzle:
         self.orig = orig
         self.maxsegid = 0
         self.piecesposition = {}
+        self.shiftside = 0
 
     def seedplaced(self):
         return self.sol.max() != -1
@@ -178,6 +179,127 @@ class Puzzle:
         segid = self.maxsegid
         self.maxsegid += 1
         return segid
+
+    def leaveonlybestsegment(self):
+        best = self.getlargestsegment()
+        for i in range(0, self.xsize):
+            for j in range(0, self.ysize):
+                seg = self.sol[i][j][2]
+                if seg != best:
+                    self.removepiece(i, j)
+
+    def removepiece(self, x, y):
+        old = self.sol[x][y][0]
+        self.sol[x][y][0] = -1
+        self.sol[x][y][1] = -1
+        self.sol[x][y][2] = -1
+        del self.piecesposition[old]
+
+    def hasonlyonesegment(self):
+        only = -2
+        for x in range(0, self.xsize):
+            for y in range(0, self.ysize):
+                seg = self.sol[x][y][2]
+                if seg == -1:
+                    return False
+                if only == -2:
+                    only = seg
+                if seg != only:
+                    return False
+        return True
+
+    def replacesegment(self):
+        minx, maxx, miny, maxy = self.getsegmentsize()
+        xsize = maxx - minx + 1
+        ysize = maxy - miny + 1
+
+        if xsize <= self.ysize and ysize <= self.xsize:
+            newsol = numpy.full((self.xsize, self.ysize, 3), -1, int)
+            for x in range(minx, maxx + 1):
+                for y in range(miny, maxy + 1):
+                    newsol[y][maxx - x - minx] = self.sol[x][y]
+
+            for x in range(0, self.xsize):
+                for y in range(0, self.ysize):
+                    rot = newsol[x][y][1]
+                    if rot != -1:
+                        newsol[x][y][1] = getclockwiseside(rot)
+        else:
+            newsol = numpy.copy(self.sol)
+        self.clearboard()
+
+        emptycols = range(0, self.xsize)
+        fullcols = []
+        emptyrows = range(0, self.ysize)
+        fullrows = []
+
+        for x in range(0, self.xsize):
+            for y in range(0, self.ysize):
+                if newsol[x][y][0] != -1:
+                    if x in emptycols:
+                        fullcols.append(x)
+                        emptycols.remove(x)
+                    if y in emptyrows:
+                        fullrows.append(y)
+                        emptyrows.remove(y)
+
+        if self.shiftside == 0:
+            self.shiftside = 1
+            shift = min(fullcols)
+            for x in range(0, self.xsize):
+                for y in range(0, self.ysize):
+                    if newsol[x][y][0] != -1:
+                        self.addtosol(x - shift, y, newsol[x][y][0], newsol[x][y][1])
+            return
+
+        if self.shiftside == 1:
+            self.shiftside = 2
+            shift = self.xsize - 1 - max(fullcols)
+            for x in range(0, self.xsize):
+                for y in range(0, self.ysize):
+                    if newsol[x][y][0] != -1:
+                        self.addtosol(x + shift, y, newsol[x][y][0], newsol[x][y][1])
+            return
+
+        if self.shiftside == 2:
+            self.shiftside = 3
+            shift = min(fullrows)
+            for x in range(0, self.xsize):
+                for y in range(0, self.ysize):
+                    if newsol[x][y][0] != -1:
+                        self.addtosol(x, y - shift, newsol[x][y][0], newsol[x][y][1])
+            return
+
+        if self.shiftside == 3:
+            self.shiftside = 0
+            shift = self.ysize - 1 - max(fullrows)
+            for x in range(0, self.xsize):
+                for y in range(0, self.ysize):
+                    if newsol[x][y][0] != -1:
+                        self.addtosol(x, y + shift, newsol[x][y][0], newsol[x][y][1])
+            return
+
+    def clearboard(self):
+        self.maxsegid = 0
+        for x in range(0, self.xsize):
+            for y in range(0, self.ysize):
+                if self.sol[x][y][0] != -1:
+                    self.removepiece(x, y)
+
+    def getsegmentsize(self):
+        minx, maxx, miny, maxy = self.xsize + 1, 0, self.ysize + 1, 0
+        for i in range(0, self.xsize):
+            for j in range(0, self.ysize):
+                if self.sol[i][j][2] != -1:
+                    if i < minx:
+                        minx = i
+                    if i > maxx:
+                        maxx = i
+                    if j < miny:
+                        miny = j
+                    if j > maxy:
+                        maxy = j
+        return minx, maxx, miny, maxy
 
     def generatesegmentsquare(self, segid):
         return numpy.full_like(self.pieces[0].image, segid * 15)

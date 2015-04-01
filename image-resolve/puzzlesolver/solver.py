@@ -5,6 +5,8 @@ import argparse
 import os
 import re
 import placer
+import shifter
+import numpy
 
 ispiecere = re.compile("^\d*_\d*_\d*\..*")
 
@@ -18,7 +20,16 @@ def main():
 
 
 def solve(puzzle):
-    placer.place(puzzle)
+    oldsol = None
+    while True:
+        placer.place(puzzle)
+        shifter.shift(puzzle)
+        if puzzle.hasonlyonesegment():
+            break
+        if oldsol is not None:
+            if (oldsol == puzzle.sol).all():
+                break
+        oldsol = numpy.copy(puzzle.sol)
 
 
 def loadpuzzle(imagedir):
