@@ -212,7 +212,7 @@ class Puzzle:
         self.sol[x][y][1] = -1
         self.sol[x][y][2] = -1
         del self.piecesposition[old]
-        self.writetovideo()
+        # self.writetovideo()
 
     def hasonlyonesegment(self):
         only = -2
@@ -326,7 +326,6 @@ class Puzzle:
                     return True
 
             return False
-
 
     def clearboard(self):
         self.maxsegid = 0

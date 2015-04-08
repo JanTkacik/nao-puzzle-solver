@@ -19,6 +19,7 @@ class Piece:
         self.bestbuddies = numpy.full((4, 2), -1, int)
 
     def calculatemetrics(self, pieces):
+        print "Calculating metrics for piece: {0}".format(self.id)
         #               4 sides, 4 sides on other piece, x metric, len pieces
         self.metrics = numpy.full((4, 4, len(Piece.metrics), len(pieces)), numpy.nan)
         for piece in pieces:
