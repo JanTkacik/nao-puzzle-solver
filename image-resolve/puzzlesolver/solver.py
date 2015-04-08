@@ -18,7 +18,8 @@ def main():
     print puzzle
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    puzzle.video.release()
+    if puzzle.video is not None:
+        puzzle.video.release()
 
 
 def solve(puzzle):
@@ -45,12 +46,14 @@ def loadpuzzle(imagedir):
         if filename == "orig.png":
             orig = cv2.imread(os.path.join(imagedir, filename))
 
-    return model.puzzle.Puzzle(pieces, orig, os.path.join(imagedir, "video.avi"))
+    # return model.puzzle.Puzzle(pieces, orig, os.path.join(imagedir, "video.avi"))
+    return model.puzzle.Puzzle(pieces, orig)
 
 
 def loadpiece(imagedir, filename, idnum=-1):
     piecedata = getpiecedata(filename)
     image = cv2.imread(os.path.join(imagedir, filename))
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     return model.piece.Piece(image, idnum, int(piecedata[1]), int(piecedata[2]))
 
 

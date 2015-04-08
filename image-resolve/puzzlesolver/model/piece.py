@@ -107,6 +107,5 @@ class Piece:
             if sides[0] == selfside and sides[1] == bestbuddy[1]:
                 return bestbuddy[0], otherrotation
 
-
     def __str__(self):
         return "[{0}][{1},{2}][{3}]".format(self.id, self.realx, self.realy, self.realdir)

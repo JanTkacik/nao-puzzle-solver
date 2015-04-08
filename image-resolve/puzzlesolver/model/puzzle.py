@@ -232,15 +232,21 @@ class Puzzle:
 
         if xsize <= self.ysize and ysize <= self.xsize:
             newsol = numpy.full((self.xsize, self.ysize, 3), -1, int)
+            newx = 0
+            newy = 0
             for x in range(minx, maxx + 1):
                 for y in range(miny, maxy + 1):
-                    newsol[y][maxx - x - minx] = self.sol[x][y]
+                    print "{0},{1} -> {2},{3}".format(x, y, newx + ysize - 1, newy)
+                    newsol[newx + ysize - 1][newy] = self.sol[x][y]
+                    newx -= 1
+                newx = 0
+                newy += 1
 
             for x in range(0, self.xsize):
                 for y in range(0, self.ysize):
                     rot = newsol[x][y][1]
                     if rot != -1:
-                        newsol[x][y][1] = getclockwiseside(rot)
+                        newsol[x][y][1] = getcounterclockwiseside(rot)
         else:
             newsol = numpy.copy(self.sol)
         self.clearboard()
