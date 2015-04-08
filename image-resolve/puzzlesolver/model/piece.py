@@ -87,13 +87,13 @@ class Piece:
         side = self.getside(sideid)
         return numpy.fliplr(side)
 
-    def isbestbuddywith(self, selfx, selfy, selfrotation, otherx, othery, otherrotation):
+    def isbestbuddywith(self, selfx, selfy, selfrotation, otherx, othery, otherrotation, otherid):
         selfside = gettouchingside(selfx, selfy, selfrotation, otherx, othery)
         bestbuddy = self.bestbuddies[selfside]
         if bestbuddy[0] == -1:
             return False
         sides = getcorrespondingsides(selfx, selfy, selfrotation, otherx, othery, otherrotation)
-        if sides[0] == selfside and sides[1] == bestbuddy[1]:
+        if sides[0] == selfside and sides[1] == bestbuddy[1] and otherid == bestbuddy[0]:
             return True
         return False
 

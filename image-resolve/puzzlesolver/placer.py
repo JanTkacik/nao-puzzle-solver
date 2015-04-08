@@ -13,10 +13,13 @@ def place(puzzle):
             print "Position: {0}".format(position)
             bbl = puzzle.getbestbuddies(position)
             print "Best buddies: {0}".format(bbl)
-            if hasonlyonepiece(bbl):
-                puzzle.addtosol(x, y, bbl[0][0], bbl[0][1])
+            bestbuddy = getbestpossiblebuddy(bbl)
+            print "Best buddy: {0}".format(bestbuddy)
+            if bestbuddy[0] != -1:
+                puzzle.addtosol(x, y, bestbuddy[0], bestbuddy[1])
                 added = True
                 break
+
         if not added:
             for position in pos:
                 print "Correct best buddy not found"
@@ -28,16 +31,28 @@ def place(puzzle):
     puzzle.showsol()
 
 
-def hasonlyonepiece(bestbudlist):
+def getbestpossiblebuddy(bestbudlist):
+    if len(bestbudlist) == 1:
+        return bestbudlist[0]
+
+    buddycnt = {}
     pieces = {}
     for buddy in bestbudlist:
         if buddy[0] in pieces:
-            if buddy[1] != pieces[buddy[0]]:
-                return False
-        pieces[buddy[0]] = buddy[1]
+            if buddy[1] == pieces[buddy[0]]:
+                buddycnt[(buddy[0], buddy[1])] += 1
+            else:
+                buddycnt[(buddy[0], buddy[1])] = 1
+        else:
+            pieces[buddy[0]] = buddy[1]
+            buddycnt[(buddy[0], buddy[1])] = 1
 
-    if -1 in pieces:
-        return False
-    if len(pieces) == 1:
-        return True
-    return False
+    maxcnt = 0
+    maxbuddy = (-1, -1)
+    for buddy in buddycnt:
+        if buddy != (-1, -1):
+            if buddycnt[buddy] > maxcnt:
+                maxcnt = buddycnt[buddy]
+                maxbuddy = buddy
+    return maxbuddy
+

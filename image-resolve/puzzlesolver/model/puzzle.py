@@ -25,11 +25,12 @@ class Puzzle:
         self.maxsegid = 0
         self.piecesposition = {}
         self.shiftside = 0
+        self.rotation = True
         self.video = None
         if videopath is not None:
             videoimg = self.getvideoimage()
             height, width, depth = videoimg.shape
-            self.video = cv2.VideoWriter(videopath, -1, 2, (width, height))
+            self.video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*"MSVC"), 2, (width, height))
             self.writetovideo()
 
     def seedplaced(self):
@@ -42,6 +43,7 @@ class Puzzle:
         posy = random.randint(0, self.ysize - 1)
         rotation = random.randint(0, 3)
         self.addtosol(posx, posy, seedpiece.id, rotation)
+        # self.addtosol(0, 2, 14, 0)
 
     def mostinformativepos(self):
         mostneighbours = 0
@@ -161,7 +163,7 @@ class Puzzle:
         segids = []
         for neigh in neighbours:
             otherposition = self.piecesposition[neigh[0]]
-            if piece.isbestbuddywith(x, y, r, otherposition[0], otherposition[1], neigh[1]):
+            if piece.isbestbuddywith(x, y, r, otherposition[0], otherposition[1], neigh[1], neigh[0]):
                 segids.append(neigh[2])
             else:
                 segids.append(-1)
@@ -230,77 +232,101 @@ class Puzzle:
         xsize = maxx - minx + 1
         ysize = maxy - miny + 1
 
-        if xsize <= self.ysize and ysize <= self.xsize:
-            newsol = numpy.full((self.xsize, self.ysize, 3), -1, int)
-            newx = 0
-            newy = 0
-            for x in range(minx, maxx + 1):
-                for y in range(miny, maxy + 1):
-                    print "{0},{1} -> {2},{3}".format(x, y, newx + ysize - 1, newy)
-                    newsol[newx + ysize - 1][newy] = self.sol[x][y]
-                    newx -= 1
+        rotated = False
+        if self.rotation:
+            if xsize <= self.ysize and ysize <= self.xsize:
+                newsol = numpy.full((self.xsize, self.ysize, 3), -1, int)
                 newx = 0
-                newy += 1
+                newy = 0
+                for x in range(minx, maxx + 1):
+                    for y in range(miny, maxy + 1):
+                        newsol[newx + ysize - 1][newy] = self.sol[x][y]
+                        newx -= 1
+                    newx = 0
+                    newy += 1
 
-            for x in range(0, self.xsize):
-                for y in range(0, self.ysize):
-                    rot = newsol[x][y][1]
-                    if rot != -1:
-                        newsol[x][y][1] = getcounterclockwiseside(rot)
+                for x in range(0, self.xsize):
+                    for y in range(0, self.ysize):
+                        rot = newsol[x][y][1]
+                        if rot != -1:
+                            newsol[x][y][1] = getcounterclockwiseside(rot)
+                rotated = True
+                self.rotation = False
+            else:
+                newsol = numpy.copy(self.sol)
         else:
             newsol = numpy.copy(self.sol)
-        self.clearboard()
 
-        emptycols = range(0, self.xsize)
-        fullcols = []
-        emptyrows = range(0, self.ysize)
-        fullrows = []
-
-        for x in range(0, self.xsize):
-            for y in range(0, self.ysize):
-                if newsol[x][y][0] != -1:
-                    if x in emptycols:
-                        fullcols.append(x)
-                        emptycols.remove(x)
-                    if y in emptyrows:
-                        fullrows.append(y)
-                        emptyrows.remove(y)
-
-        if self.shiftside == 0:
-            self.shiftside = 1
-            shift = min(fullcols)
+        if rotated:
+            self.clearboard()
             for x in range(0, self.xsize):
                 for y in range(0, self.ysize):
                     if newsol[x][y][0] != -1:
-                        self.addtosol(x - shift, y, newsol[x][y][0], newsol[x][y][1])
-            return
+                        self.addtosol(x, y, newsol[x][y][0], newsol[x][y][1])
+            return True
+        else:
+            self.rotation = True
+            emptycols = range(0, self.xsize)
+            fullcols = []
+            emptyrows = range(0, self.ysize)
+            fullrows = []
 
-        if self.shiftside == 1:
-            self.shiftside = 2
-            shift = self.xsize - 1 - max(fullcols)
             for x in range(0, self.xsize):
                 for y in range(0, self.ysize):
                     if newsol[x][y][0] != -1:
-                        self.addtosol(x + shift, y, newsol[x][y][0], newsol[x][y][1])
-            return
+                        if x in emptycols:
+                            fullcols.append(x)
+                            emptycols.remove(x)
+                        if y in emptyrows:
+                            fullrows.append(y)
+                            emptyrows.remove(y)
 
-        if self.shiftside == 2:
-            self.shiftside = 3
-            shift = min(fullrows)
-            for x in range(0, self.xsize):
-                for y in range(0, self.ysize):
-                    if newsol[x][y][0] != -1:
-                        self.addtosol(x, y - shift, newsol[x][y][0], newsol[x][y][1])
-            return
+            if self.shiftside == 0:
+                self.shiftside = 1
+                shift = min(fullcols)
+                if shift > 0:
+                    self.clearboard()
+                    for x in range(0, self.xsize):
+                        for y in range(0, self.ysize):
+                            if newsol[x][y][0] != -1:
+                                self.addtosol(x - shift, y, newsol[x][y][0], newsol[x][y][1])
+                    return True
 
-        if self.shiftside == 3:
-            self.shiftside = 0
-            shift = self.ysize - 1 - max(fullrows)
-            for x in range(0, self.xsize):
-                for y in range(0, self.ysize):
-                    if newsol[x][y][0] != -1:
-                        self.addtosol(x, y + shift, newsol[x][y][0], newsol[x][y][1])
-            return
+            if self.shiftside == 1:
+                self.shiftside = 2
+                shift = self.xsize - 1 - max(fullcols)
+                if shift > 0:
+                    self.clearboard()
+                    for x in range(0, self.xsize):
+                        for y in range(0, self.ysize):
+                            if newsol[x][y][0] != -1:
+                                self.addtosol(x + shift, y, newsol[x][y][0], newsol[x][y][1])
+                    return True
+
+            if self.shiftside == 2:
+                self.shiftside = 3
+                shift = min(fullrows)
+                if shift > 0:
+                    self.clearboard()
+                    for x in range(0, self.xsize):
+                        for y in range(0, self.ysize):
+                            if newsol[x][y][0] != -1:
+                                self.addtosol(x, y - shift, newsol[x][y][0], newsol[x][y][1])
+                    return True
+
+            if self.shiftside == 3:
+                self.shiftside = 0
+                shift = self.ysize - 1 - max(fullrows)
+                if shift > 0:
+                    self.clearboard()
+                    for x in range(0, self.xsize):
+                        for y in range(0, self.ysize):
+                            if newsol[x][y][0] != -1:
+                                self.addtosol(x, y + shift, newsol[x][y][0], newsol[x][y][1])
+                    return True
+
+            return False
+
 
     def clearboard(self):
         self.maxsegid = 0
@@ -324,8 +350,26 @@ class Puzzle:
                         maxy = j
         return minx, maxx, miny, maxy
 
-    def generatesegmentsquare(self, segid):
-        return numpy.full_like(self.pieces[0].image, (segid + 1) * 10)
+    def generatesegmentsquare(self, sol, x, y):
+        image = numpy.full_like(self.pieces[0].image, (sol[2] + 1) * 10)
+        pieceid = sol[0]
+        rot = sol[1]
+        cv2.putText(image, "{}/{}".format(pieceid, rot), (35, 45), cv2.FONT_HERSHEY_PLAIN, 0.6, (255, 255, 255))
+        if pieceid != -1:
+            piece = self.pieces[pieceid]
+            if x > 0:
+                bb = piece.getbestbuddyfor(x, y, rot, x - 1, y)
+                cv2.putText(image, "{}/{}".format(bb[0], bb[1]), (5, 45), cv2.FONT_HERSHEY_PLAIN, 0.6, (255, 0, 0))
+            if x < self.xsize - 1:
+                bb = piece.getbestbuddyfor(x, y, rot, x + 1, y)
+                cv2.putText(image, "{}/{}".format(bb[0], bb[1]), (60, 45), cv2.FONT_HERSHEY_PLAIN, 0.6, (0, 255, 0))
+            if y > 0:
+                bb = piece.getbestbuddyfor(x, y, rot, x, y - 1)
+                cv2.putText(image, "{}/{}".format(bb[0], bb[1]), (35, 15), cv2.FONT_HERSHEY_PLAIN, 0.6, (0, 0, 255))
+            if y < self.ysize - 1:
+                bb = piece.getbestbuddyfor(x, y, rot, x, y + 1)
+                cv2.putText(image, "{}/{}".format(bb[0], bb[1]), (35, 75), cv2.FONT_HERSHEY_PLAIN, 0.6, (255, 255, 0))
+        return image
 
     def generateimages(self):
         dummy = numpy.full_like(self.pieces[0].image, 0)
@@ -336,7 +380,7 @@ class Puzzle:
             columnsseg.append([])
             for j in range(0, self.ysize):
                 sol = self.sol[i][j]
-                columnsseg[i].append(self.generatesegmentsquare(sol[2]))
+                columnsseg[i].append(self.generatesegmentsquare(sol, i, j))
                 if sol[0] == -1:
                     columns[i].append(dummy)
                 else:

@@ -26,7 +26,9 @@ def solve(puzzle):
     oldsol = None
     while True:
         placer.place(puzzle)
-        shifter.shift(puzzle)
+        moved = shifter.shift(puzzle)
+        if not moved:
+            break
         if puzzle.hasonlyonesegment():
             break
         if oldsol is not None:
@@ -46,8 +48,8 @@ def loadpuzzle(imagedir):
         if filename == "orig.png":
             orig = cv2.imread(os.path.join(imagedir, filename))
 
-    # return model.puzzle.Puzzle(pieces, orig, os.path.join(imagedir, "video.avi"))
-    return model.puzzle.Puzzle(pieces, orig)
+    return model.puzzle.Puzzle(pieces, orig, os.path.join(imagedir, "video.avi"))
+    # return model.puzzle.Puzzle(pieces, orig)
 
 
 def loadpiece(imagedir, filename, idnum=-1):
