@@ -1,7 +1,7 @@
 import numpy
 import math
-from puzzlesolver.metrics import dissimilarity
-from puzzlesolver.metrics.helper import *
+from imageresolve.puzzlesolver.metrics import dissimilarity
+from imageresolve.puzzlesolver.metrics.helper import *
 
 
 class Piece:

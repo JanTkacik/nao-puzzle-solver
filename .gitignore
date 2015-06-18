@@ -1,1 +1,11 @@
 .idea/
+data/test-images/dolomites/
+data/test-images/ibaujo/
+data/test-images/lahke/
+data/test-images/obrazok/
+data/test-images/outerspacefantasy/
+data/test-images/real/
+data/test-images/ujko/
+data/test-videos/
+*.py[cod]
+

@@ -1,8 +1,5 @@
-import numpy as np
 import cv2
-import argparse
-import os.path
-
+import numpy as np
 
 def angle_cos(p0, p1, p2):
     d1, d2 = (p0-p1).astype('float'), (p2-p1).astype('float')
@@ -47,7 +44,8 @@ def find_squares(img):
             else:
                 retval, binn = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
                 # cv2.imshow("Test {}".format(thrs), binn)
-            contours, hierarchy = cv2.findContours(binn, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            dummy, contours, hierarchy = cv2.findContours(binn, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            #x = cv2.findContours(binn, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
                 cnt_len = cv2.arcLength(cnt, True)
                 cnt = cv2.approxPolyDP(cnt, 0.02*cnt_len, True)
@@ -169,7 +167,10 @@ def filterSquaresBySize(squares, thresh = 0.3):
         act=act//4
         sizes.append(act)
     sizes.sort()
-    median=sizes[(len(sizes) + 1)//2 ]
+    if len(sizes) > 0:
+        median = sizes[(len(sizes) + 1)//2]
+    else:
+        return []
     filtered_squares=[]
 
     i=0
@@ -179,14 +180,15 @@ def filterSquaresBySize(squares, thresh = 0.3):
         i=i+1
     return filtered_squares
 
-def main():
-    args = parse_args()
-    print args.videofile
-    if not os.path.exists(args.videofile):
-        print "Video does not exist"
-        return
 
-    image = cv2.imread(args.videofile)
+def extract(image):
+    # args = parse_args()
+    # print args.videofile
+    # if not os.path.exists(args.videofile):
+    #     print "Video does not exist"
+    #     return
+    #
+    # image = cv2.imread(args.videofile)
     # cv2.imshow("Original", image)
 
     filtered = filter_box(image, np.array([60, 40, 40], np.uint8), np.array([70, 255, 255], np.uint8))
@@ -199,6 +201,7 @@ def main():
 
     index = 0
     outputSize = 100
+    output = []
     for sqr in squares_found:
         dst = trasnformCropToRectangle(image,sqr,outputSize)
         index = index+1
@@ -210,14 +213,12 @@ def main():
         bgr_dst = cv2.cvtColor(hsv_dst, cv2.COLOR_HSV2BGR)
         #bgr_dst = cv2.medianBlur(bgr_dst,11)
 
-        #cv2.imshow('dst {0}'.format(index),dst)
-        cv2.imwrite('/home/martas/Video/output/{0}_{1}b.jpg'.format(outputSize,index),bgr_dst)
-
+        # cv2.imshow('dst {0}'.format(index),dst)
+        # cv2.imwrite('/home/martas/Video/output/{0}_{1}b.jpg'.format(outputSize,index),bgr_dst)
+        output.append(bgr_dst)
     # print squares_found
     # cv2.drawContours(image, squares_found, -1, (0, 255, 0), 3)
     # cv2.imshow('Squares', image)
     # cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-if __name__ == '__main__':
-    main()
+    # cv2.destroyAllWindows()
+    return output

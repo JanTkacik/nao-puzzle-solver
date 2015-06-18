@@ -2,19 +2,13 @@ import numpy
 import random
 import string
 import cv2
-from puzzlesolver.metrics.helper import *
+from imageresolve.puzzlesolver.metrics.helper import *
 
 
 class Puzzle:
-    def __init__(self, pieces, orig, videopath=None):
-        maxx = 0
-        maxy = 0
-        for piece in pieces:
-            if piece.realx > maxx:
-                maxx = piece.realx
-            if piece.realy > maxy:
-                maxy = piece.realy
-
+    def __init__(self, pieces, orig, x, y, videopath=None):
+        maxx = x
+        maxy = y
         self.xsize = maxx + 1
         self.ysize = maxy + 1
         self.pieces = pieces
@@ -143,7 +137,10 @@ class Puzzle:
 
     def getvideoimage(self):
         image, seg = self.generateimages()
-        return numpy.vstack([image, seg])
+        videoim = numpy.vstack([image, seg])
+        cv2.imshow("Sol", videoim)
+        cv2.waitKey(0)
+        return videoim
 
     def writetovideo(self):
         if self.video is not None:
@@ -403,7 +400,8 @@ class Puzzle:
 
     def showsol(self):
         image, imageseg = self.generateimages()
-        cv2.imshow("Original", self.orig)
+        if self.orig is not None:
+            cv2.imshow("Original", self.orig)
         cv2.imshow("Solved", image)
         cv2.imshow("Segments", imageseg)
 

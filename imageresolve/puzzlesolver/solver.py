@@ -8,7 +8,8 @@ import placer
 import shifter
 import numpy
 
-ispiecere = re.compile("^\d*_\d*_\d*\..*")
+# ispiecere = re.compile("^\d*_\d*_\d*\..*")
+ispiecere = re.compile("^\d*_\d*b\..*")
 
 
 def main():
@@ -41,6 +42,7 @@ def loadpuzzle(imagedir):
     pieces = []
     idnum = 0
     files = os.listdir(imagedir)
+    orig = None
     for filename in files:
         if ispiece(filename):
             pieces.append(loadpiece(imagedir, filename, idnum))
@@ -48,19 +50,20 @@ def loadpuzzle(imagedir):
         if filename == "orig.png":
             orig = cv2.imread(os.path.join(imagedir, filename))
 
-    return model.puzzle.Puzzle(pieces, orig, os.path.join(imagedir, "video.avi"))
+    return model.puzzle.Puzzle(pieces, orig, 3, 2, os.path.join(imagedir, "video.avi"))
     # return model.puzzle.Puzzle(pieces, orig)
 
 
 def loadpiece(imagedir, filename, idnum=-1):
-    piecedata = getpiecedata(filename)
+    # piecedata = getpiecedata(filename)
     image = cv2.imread(os.path.join(imagedir, filename))
-    # image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    return model.piece.Piece(image, idnum, int(piecedata[1]), int(piecedata[2]))
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    return model.piece.Piece(image, idnum)
 
 
 def getpiecedata(filename):
     name, ext = os.path.splitext(filename)
+    name = name.replace('b', '')
     return re.split("_", name)
 
 
