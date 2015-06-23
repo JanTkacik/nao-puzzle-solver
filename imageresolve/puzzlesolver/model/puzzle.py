@@ -138,8 +138,13 @@ class Puzzle:
     def getvideoimage(self):
         image, seg = self.generateimages()
         videoim = numpy.vstack([image, seg])
-        cv2.imshow("Sol", videoim)
-        cv2.waitKey(0)
+        #cv2.imshow("Sol", videoim)
+        #cv2.waitKey(0)
+        return videoim
+
+    def getvideoimage2(self, sol):
+        image, seg = self.generateimages2(sol)
+        videoim = numpy.vstack([image, seg])
         return videoim
 
     def writetovideo(self):
@@ -398,12 +403,43 @@ class Puzzle:
         imageseg = numpy.hstack(imagesegcols)
         return image, imageseg
 
+    def generateimages2(self, sol2):
+        dummy = numpy.full_like(self.pieces[0].image, 0)
+        columns = []
+        columnsseg = []
+        for i in range(0, self.xsize):
+            columns.append([])
+            columnsseg.append([])
+            for j in range(0, self.ysize):
+                sol = sol2[i][j]
+                columnsseg[i].append(self.generatesegmentsquare(sol, i, j))
+                if sol[0] == -1:
+                    columns[i].append(dummy)
+                else:
+                    if sol[1] == 0:
+                        columns[i].append(self.pieces[sol[0]].image)
+                    if sol[1] == 1:
+                        columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 2))
+                    if sol[1] == 2:
+                        columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 1))
+                    if sol[1] == 3:
+                        columns[i].append(numpy.rot90(self.pieces[sol[0]].image, 3))
+        imagecols = []
+        imagesegcols = []
+        for col in columns:
+            imagecols.append(numpy.vstack(col))
+        for segcol in columnsseg:
+            imagesegcols.append(numpy.vstack(segcol))
+        image = numpy.hstack(imagecols)
+        imageseg = numpy.hstack(imagesegcols)
+        return image, imageseg
+
     def showsol(self):
         image, imageseg = self.generateimages()
-        if self.orig is not None:
-            cv2.imshow("Original", self.orig)
-        cv2.imshow("Solved", image)
-        cv2.imshow("Segments", imageseg)
+        #if self.orig is not None:
+            #cv2.imshow("Original", self.orig)
+        #cv2.imshow("Solved", image)
+        #cv2.imshow("Segments", imageseg)
 
     def __str__(self):
         data = ["Puzzle {0}x{1}\r\n".format(self.xsize, self.ysize)]

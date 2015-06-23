@@ -44,7 +44,7 @@ def find_squares(img):
             else:
                 retval, binn = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
                 # cv2.imshow("Test {}".format(thrs), binn)
-            dummy, contours, hierarchy = cv2.findContours(binn, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            contours, hierarchy = cv2.findContours(binn, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             #x = cv2.findContours(binn, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
                 cnt_len = cv2.arcLength(cnt, True)
@@ -77,7 +77,7 @@ def inRange(clr, low, high):
     return False
 
 
-def filterGreenEdges(img,low,high,thresh=5,shift=5):
+def filterGreenEdges(img,low,high,thresh=0,shift=5):
     imax = img.shape[0]
     jmax = img.shape[1]
     icenter=imax//2
@@ -158,6 +158,8 @@ def findOneSquarePerPuzzle( squares ):
 
 
 def filterSquaresBySize(squares, thresh = 0.3):
+    if len(squares) == 0:
+        return []
     sizes=[]
     for s in squares:
         center =[(s[0][0]+s[1][0]+s[2][0]+s[3][0])//4, (s[0][1]+s[1][1]+s[2][1]+s[3][1])//4]
@@ -168,7 +170,7 @@ def filterSquaresBySize(squares, thresh = 0.3):
         sizes.append(act)
     sizes.sort()
     if len(sizes) > 0:
-        median = sizes[(len(sizes) + 1)//2]
+        median = sizes[((len(sizes) + 1)//2) - 1]
     else:
         return []
     filtered_squares=[]
@@ -191,12 +193,15 @@ def extract(image):
     # image = cv2.imread(args.videofile)
     # cv2.imshow("Original", image)
 
-    filtered = filter_box(image, np.array([60, 40, 40], np.uint8), np.array([70, 255, 255], np.uint8))
-    # cv2.imshow("Filtered", filtered)
+    filtered = filter_box(image, np.array([50, 40, 40], np.uint8), np.array([75, 255, 255], np.uint8))
+    cv2.imwrite("Filtered.jpg", filtered)
 
     squares_found = find_squares(filtered)
+    print "Found {0} puzzles".format(len(squares_found))
     squares_found = filterSquaresBySize(squares_found)
+    print "After size filtering {0} puzzles".format(len(squares_found))
     squares_found = findOneSquarePerPuzzle(squares_found)
+    print "After center filtering {0} puzzles".format(len(squares_found))
 
 
     index = 0
@@ -214,11 +219,11 @@ def extract(image):
         #bgr_dst = cv2.medianBlur(bgr_dst,11)
 
         # cv2.imshow('dst {0}'.format(index),dst)
-        # cv2.imwrite('/home/martas/Video/output/{0}_{1}b.jpg'.format(outputSize,index),bgr_dst)
+        cv2.imwrite('{0}_{1}b.jpg'.format(outputSize,index),bgr_dst)
         output.append(bgr_dst)
     # print squares_found
-    # cv2.drawContours(image, squares_found, -1, (0, 255, 0), 3)
-    # cv2.imshow('Squares', image)
+    cv2.drawContours(image, squares_found, -1, (0, 255, 0), 3)
+    cv2.imwrite('Squares.jpg', image)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     return output

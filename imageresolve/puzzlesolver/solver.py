@@ -25,8 +25,12 @@ def main():
 
 def solve(puzzle):
     oldsol = None
+    sol = None
+    i = 0
     while True:
+        i += 1
         placer.place(puzzle)
+        sol = numpy.copy(puzzle.sol)
         moved = shifter.shift(puzzle)
         if not moved:
             break
@@ -35,8 +39,10 @@ def solve(puzzle):
         if oldsol is not None:
             if (oldsol == puzzle.sol).all():
                 break
+        if i > 100:
+            break
         oldsol = numpy.copy(puzzle.sol)
-
+    return sol
 
 def loadpuzzle(imagedir):
     pieces = []
@@ -57,7 +63,7 @@ def loadpuzzle(imagedir):
 def loadpiece(imagedir, filename, idnum=-1):
     # piecedata = getpiecedata(filename)
     image = cv2.imread(os.path.join(imagedir, filename))
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    #image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     return model.piece.Piece(image, idnum)
 
 
